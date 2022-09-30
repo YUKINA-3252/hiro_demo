@@ -36,8 +36,11 @@
     <remap from="~indices" to="attention_clipper_with_bbox_array/output/point_indices" />
     <rosparam subst_value="true">
       keep_organized: true
+<<<<<<< HEAD
       approximate_sync: true
       queue_size: 100
+=======
+>>>>>>> 4d526d609f55d77c9d57c7854aa656d46c1aa326
     </rosparam>
   </node>
 
