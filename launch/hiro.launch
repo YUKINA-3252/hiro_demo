@@ -17,6 +17,12 @@
   <arg name="launch_tabletop_detector" default="false" />
   <arg name="launch_grasp_mask_rcnn" default="false" />
 
+  <include file="$(find hiro_demo)/launch/filter_points.launch" >
+    <arg name="input_cloud" value="/head_camera/depth_registered/points" />
+    <arg name="input_camera_info" value="/head_camera/rgb/camera_info" />
+    <arg name="frame_id" value="WAIST" />
+  </include>
+
   <!-- <!-\- camera -\-> -->
   <!-- <arg name="camera_ns" default="realsense_torso" /> -->
   <!-- <arg name="camera_type" default="l515" /> -->
@@ -149,7 +155,7 @@
 
   <!-- Launch recognition pipeline -->
   <include file="$(find jsk_pcl_ros)/sample/tabletop_object_detector.launch">
-    <arg name="input" value="/head_camera/depth_registered/points" />
+    <arg name="input" value="/extract_indices_with_bbox_array/output" />
     <arg name="sensor_frame" value="head_camera_rgb_optical_frame" />
     <arg name="launch_openni" value="false" />
     <arg name="launch_tracking" value="false" />

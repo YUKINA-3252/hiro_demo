@@ -1,0 +1,39 @@
+<launch>
+
+  <arg name="input_cloud" value="/head_camera/depth_registered/points" />
+  <arg name="input_camera_info" value="/head_camera/rgb/camera_info" />
+  <arg name="frame_id" value="WAIST" />
+
+  <node name="bounding_box_array_publisher"
+        pkg="jsk_recognition_utils" type="bounding_box_array_publisher.py">
+    <rosparam subst_value="true">
+      rate: 30
+      frame_id: $(arg frame_id)
+      boxes:
+        - position: [0.5, 0, 0]
+          rotation: [0, 0, 0]
+          dimension: [1, 1, 1]
+    </rosparam>
+  </node>
+
+  <node name="attention_clipper_with_bbox_array"
+        pkg="nodelet" type="nodelet"
+        args="standalone jsk_pcl/AttentionClipper">
+    <remap from="~input" to="$(arg input_camera_info)" />
+    <remap from="~input/points" to="$(arg input_cloud)" />
+    <remap from="~input/box_array" to="bounding_box_array_publisher/output" />
+    <rosparam subst_value="true">
+      approximate_sync: true
+      queue_size: 30
+      frame_id: $(arg frame_id)
+      use_multiple_attention: true
+    </rosparam>
+  </node>
+
+  <node name="extract_indices_with_bbox_array"
+        pkg="jsk_pcl_ros" type="extract_indices">
+    <remap from="~input" to="$(arg input_cloud)" />
+    <remap from="~indices" to="attention_clipper_with_bbox_array/output/point_indices" />
+  </node>
+
+</launch>
