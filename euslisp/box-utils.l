@@ -22,7 +22,7 @@
         ;; (print (send box :dimensions :y))
         ;; (print (send box :dimensions :z))
         (when (or (< (send box :dimensions :y) 0.1)
-                   (< (send box :dimensions :z) 0.1)
+                   ;;(< (send box :dimensions :z) 0.1)
                    (< (send box :dimensions :x) 0.1))
           (return-from valid-tape-boxes box))))
     nil))
@@ -36,14 +36,14 @@
         ;; (print (send box :dimensions :y))
         ;; (print (send box :dimensions :z))
         (when (and (> (send box :dimensions :y) 0.1)
-                   (> (send box :dimensions :z) 0.1)
+                   ;;(> (send box :dimensions :z) 0.1)
                    (> (send box :dimensions :x) 0.1))
           (return-from valid-boxes box))))
     nil))
 
 
 (defun tf-pose->coords (frame_id pose)
-  (send (send *tfl* :lookup-transform "odom" frame_id (ros::time 0))
+  (send (send *tfl* :lookup-transform "WAIST" frame_id (ros::time 0))
         :transform (ros::tf-pose->coords pose)))
 
 (defun bbox->cube (bbox)

@@ -34,6 +34,9 @@
         pkg="jsk_pcl_ros" type="extract_indices">
     <remap from="~input" to="$(arg input_cloud)" />
     <remap from="~indices" to="attention_clipper_with_bbox_array/output/point_indices" />
+    <rosparam subst_value="true">
+      keep_organized: true
+    </rosparam>
   </node>
 
 </launch>
