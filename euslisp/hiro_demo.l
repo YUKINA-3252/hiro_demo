@@ -2,16 +2,28 @@
 (load "package://hiro_demo/euslisp/topic-utils.l")
 (load "package://hiro_demo/euslisp/box-utils.l")
 (load "models/arrow-object.l")
+(load "package://pr2eus/pr2-interface.l")
 (ros::load-ros-package "jsk_recognition_msgs")
 
 (hironxjsk-init)
-(objects (list *hironxjsk*))
-(send *ri* :angle-vector (send *hironxjsk* :reset-manip-pose))
+;;display aroow-coords of hand
+(setq *right-coords-arrow* (arrow))
+(setq *left-coords-arrow* (arrow))
+(send *right-coords-arrow* :newcoords (send *hironxjsk* :rarm :end-coords :copy-worldcoords))
+(send *left-coords-arrow* :newcoords (send *hironxjsk* :larm :end-coords :copy-worldcoords))
+(send (send *hironxjsk* :larm :end-coords) :assoc *left-coords-arrow*)
+(send (send *hironxjsk* :rarm :end-coords) :assoc *right-coords-arrow*)
+(objects (list *hironxjsk*  *right-coords-arrow* *left-coords-arrow*))
+
+(send *ri* :angle-vector (send *hironxjsk* :reset-manip-pose) 5000)
+(send *hironxjsk* :larm :move-end-pos #f(0 0 200) :world)
+(send *hironxjsk* :rarm :move-end-pos #f(0 0 200) :world)
+(send *ri* :angle-vector (send *hironxjsk* :angle-vector) 5000)
 (send *hironxjsk* :head :look-at
       (send (send (send *hironxjsk* :torso :end-coords :copy-worldcoords)
                   :translate #f(750 0 0)) :worldpos))
 (send *irtviewer* :draw-objects)  ;; Only for display
-(send *ri* :angle-vector (send *hironxjsk* :angle-vector) 1000)
+(send *ri* :angle-vector (send *hironxjsk* :angle-vector) 5000)
 (send *ri* :wait-interpolation)
 
 (defun detect()
@@ -20,12 +32,7 @@
   (setq target-box (find-bbox *box-topic-name* :condition #'valid-boxes))
   (setq *target-box-arrow* (arrow))
   (send *target-box-arrow* :newcoords (send target-box :copy-worldcoords))
-  (setq box-x (x-of-cube target-box))
-  (setq box-y (y-of-cube target-box))
-  (setq right-offset-x (- (/ box-x 1.0)))
-  (setq left-offset-x (- (/ box-x 1.0)))
-  (setq right-offset-y (- (/ box-y 1.0)))
-  (setq left-offset-y (- (/ box-y 1.0)))
+
   (setq yokonaga 1)
   (if (> (abs (elt (send *target-box-arrow* :x-axis) 0)) (abs (elt (send *target-box-arrow* :x-axis) 1))) ;;if true tatenaga
       (setq yokonaga -1))
@@ -41,16 +48,279 @@
   (send *target-box* :newcoords (send target-box :copy-worldcoords))
   (send *target-box-arrow* :newcoords (send target-box :copy-worldcoords))
 
-  (objects (list *hironxjsk* *target-box* *target-box-arrow*))
+  (objects (list *hironxjsk* *target-box* *target-box-arrow* *right-coords-arrow* *left-coords-arrow*))
+
+  (setq box-coords (instance cascaded-coords :init))
+  (send box-coords :move-to (send target-box :copy-worldcoords) :world)
+  (setq box-x (y-of-cube target-box))
+  (setq box-y (x-of-cube target-box))
+  (setq box-z (z-of-cube target-box))
+  (setq box-left-edge (send (send box-coords :copy-worldcoords) :translate (float-vector 0 (/ box-y 2) 0) :world))
+  (setq box-right-edge (send (send box-coords :copy-worldcoords) :translate (float-vector 0 (* -1 (/ box-y 2)) 0) :world))
+  (setq box-upper-edge (send (send box-coords :copy-worldcoords) :translate (float-vector (/ box-x 2) 0 0) :world))
+  (setq box-down-edge (send (send box-coords :copy-worldcoords) :translate (float-vector (* -1 (/ box-x 2)) 0 0) :world))
+  (setq box-edge-1 (instance cascaded-coords :init))
+  (send box-edge-1 :move-to (send box-coords :copy-worldcoords) :world)
+  (send box-edge-1 :translate (float-vector (* -1 (/ box-x 2)) (/ box-y 2) (/ box-z 2)) :world)
+  (setq box-edge-2 (instance cascaded-coords :init))
+  (send box-edge-2 :move-to (send box-coords :copy-worldcoords) :world)
+  (send box-edge-2 :translate (float-vector (* -1 (/ box-x 2)) (* -1 (/ box-y 2)) (/ box-z 2)) :world)
+  (setq box-edge-3 (instance cascaded-coords :init))
+  (send box-edge-3 :move-to (send box-coords :copy-worldcoords) :world)
+  (send box-edge-3 :translate (float-vector (/ box-x 2) (* -1 (/ box-y 2)) (/ box-z 2)) :world)
+  (setq box-edge-4 (instance cascaded-coords :init))
+  (send box-edge-4 :move-to (send box-coords :copy-worldcoords) :world)
+  (send box-edge-4 :translate (float-vector (/ box-x 2) (/ box-y 2) (/ box-z 2)) :world)
+  (setq box-edge-5 (instance cascaded-coords :init))
+  (send box-edge-5 :move-to (send box-coords :copy-worldcoords) :world)
+  (send box-edge-5 :translate (float-vector (* -1 (/ box-x 2)) (/ box-y 2) (* -1 (/ box-z 2))) :world)
+  (setq box-edge-6 (instance cascaded-coords :init))
+  (send box-edge-6 :move-to (send box-coords :copy-worldcoords) :world)
+  (send box-edge-6 :translate (float-vector (* -1 (/ box-x 2)) (* -1 (/ box-y 2)) (* -1 (/ box-z 2))) :world)
+  (setq box-edge-7 (instance cascaded-coords :init))
+  (send box-edge-7 :move-to (send box-coords :copy-worldcoords) :world)
+  (send box-edge-7 :translate (float-vector (/ box-x 2) (* -1 (/ box-y 2)) (* -1 (/ box-z 2))) :world)
+  (setq box-edge-8 (instance cascaded-coords :init))
+  (send box-edge-8 :move-to (send box-coords :copy-worldcoords) :world)
+  (send box-edge-8 :translate (float-vector (/ box-x 2) (* -1 (/ box-y 2)) (* -1 (/ box-z 2))) :world)
+
+  (setq box-center (instance cascaded-coords :init))
+  (send box-center :move-to (send box-coords :copy-worldcoords) :world)
+  (send box-center :translate (float-vector 0 0 (/ box-z 2)))
+
+  (send box-coords :assoc box-edge-1)
+  (send box-coords :assoc box-edge-2)
+  (send box-coords :assoc box-edge-3)
+  (send box-coords :assoc box-edge-4)
+  (send box-coords :assoc box-edge-5)
+  (send box-coords :assoc box-edge-6)
+  (send box-coords :assoc box-edge-7)
+  (send box-coords :assoc box-edge-8)
+  (send box-coords :assoc box-center)
+  (setq left-initial-coords (send *hironxjsk* :larm :end-coords :copy-worldcoords))
+  (setq right-initial-coords (send *hironxjsk* :rarm :end-coords :copy-worldcoords))
   )
-(defun ir2ri (&optional (time 3000))
-  (send *ri* :angle-vector (send *hironxjsk* :angle-vector) time)
+(defun ir2ri ()
+  (send *ri* :angle-vector (send *hironxjsk* :angle-vector) 5000)
+  (send *ri* :wait-interpolation)
   )
 (defun ri2ir ()
   (send *hironxjsk* :angle-vector (send *ri* :state :potentio-vector)))
+(defun ri2ir-hand ()
+  (send *hironxjsk* :hand-angle-vector :arm (send *ri* :hand-angle-vector :arm)))
+(defun ri2ir-rhand ()
+  (send *hironxjsk* :hand-angle-vector :rhand (send *ri* :hand-angle-vector :rhand)))
+(defun ri2ir-lhand ()
+  (send *hironxjsk* :hand-angle-vector :lhand (send *ri* :hand-angle-vector :lhand)))
+(defun ir2ri-hand ()
+  (send *ri* :hand-angle-vector :arm (send *hironxjsk* :hand-angle-vector :arm))
+  (send *ri* :wait-interpolation))
+(defun ir2ri-rhand ()
+  (send *ri* :hand-angle-vector :rhand (send *hironxjsk* :hand-angle-vector :rhand))
+  (send *ri* :wait-interpolation))
+(defun ir2ri-lhand ()
+  (send *ri* :hand-angle-vector :lhand (send *hironxjsk* :hand-angle-vector :lhand))
+  (send *ri* :wait-interpolation))
+(defun rhand-grasp ()
+  (send *hironxjsk* :start-grasp :rarm)
+  (send *ri* :hand-angle-vector :rhand
+        (send *hironxjsk* :hand-angle-vector :rhand) 1000)
+  (send *ri* :wait-interpolation))
+(defun lhand-grasp ()
+  (send *hironxjsk* :start-grasp :larm)
+  (send *ri* :hand-angle-vector :lhand
+        (send *hironxjsk* :hand-angle-vector :lhand) 1000)
+  (send *ri* :wait-interpolation)
+  )
+(defun right-reset-pose()
+  (send *hironxjsk* :start-grasp :rarm)
+  (send *ri* :stop-grasp :rarm)
+  (send *hironxjsk* :rarm :inverse-kinematics (send right-initial-coords :copy-worldcoords)
+        :revert-if-fail t
+        :rotation-axis t
+        :debug-view nil :thre 50)
+  (send *ri* :angle-vector (send *hironxjsk* :angle-vector) 5000)
+  (send *ri* :wait-interpolation))
+(defun left-reset-pose()
+  (send *hironxjsk* :stop-grasp :larm)
+  (send *ri* :stop-grasp :larm)
+  (send *hironxjsk* :larm :inverse-kinematics (send left-initial-coords :copy-worldcoords)
+        :revert-if-fail t
+        :rotation-axis t
+        :debug-view nil :thre 50)
+  (send *ri* :angle-vector (send *hironxjsk* :angle-vector) 6000)
+  (send *ri* :wait-interpolation)
+  )
+(defun lhand-twist ()
+  (send *hironxjsk* :start-grasp :larm)
+  (ir2ri-lhand)
+  (unix::sleep 2)
+  (setq current-lhand (send *hironxjsk* :hand-angle-vector :lhand))
+  (setf (aref current-lhand 3) 20)
+  (send *hironxjsk* :hand-angle-vector :lhand current-lhand)
+  (ir2ri-lhand)
+  (unix::sleep 2)
+  )
+(defun move-robot()
+  (setq right-target-coords (send box-right-edge :copy-worldcoords))
+  (send right-target-coords :rotate pi :y)
+  (send right-target-coords :translate #f(50 0 50) :world)
+  (send *hironxjsk* :rarm :inverse-kinematics (send right-target-coords :copy-worldcoords)
+        :revert-fail t
+        :rotation-axis nil
+        :debug-view nil :thre 50
+        :move-target (send *hironxjsk* :get :rhand-tip-coords))
 
+  (setq target-coords (send box-down-edge :copy-worldcoords))
+  (send target-coords :translate #f(-30 0 50) :world)
+  (send target-coords :rotate pi :y)
+  (send *hironxjsk* :larm :inverse-kinematics (send target-coords :copy-worldcoords)
+        :revert-fail t
+        :rotation-axis t
+        :debug-view nil :thre 50
+        :move-target (send *hironxjsk* :get :lhand-tip-coords))
+  (lhand-grasp)
+  (ir2ri)
 
+  (setq repeat-time (floor (/ (/ box-y 2) 20)))
+  (setq length-1 90)
+  (dotimes (x repeat-time)
+    (progn
+      (if (> x 0)
+          (progn
+            (send tanrget-coords :translate #f(0 20 0) :world)
+            (send *hironxjsk* :larm :inverse-kinematics (send target-coords :copy-worldcoords)
+                  :revert-fail t
+                  :rotation-axis t
+                  :debug-view nil :thre 50
+                  :move-target (send *hironxjsk* :get :lhand-tip-coords))
+            (ir2ri)
+            ))
+      (send target-coords :translate (float-vector 0 0 (* -1 box-z)) :world)
+      (send *hironxjsk* :larm :inverse-kinematics (send target-coords :copy-worldcoords)
+            :revert-fail t
+            :rotation-axis t
+            :debug-view nil :thre 50
+            :move-target (send *hironxjsk* :get :lhand-tip-coords))
+      (ir2ri)
+      (send target-coords :translate (float-vector 0 0 box-z) :world)
+      (send *hironxjsk* :larm :inverse-kinematics (send target-coords :copy-worldcoords)
+            :revert-fail t
+            :rotation-axis t
+            :debug-view nil :thre 50
+            :move-target (send *hironxjsk* :get :lhand-tip-coords))
+      (ir2ri)
+      ))
 
+  (setq target-coords (send box-edge-1 :copy-worldcoords))
+  (send target-coords :rotate pi :y)
+  (send target-coords :rotate pi/2 :z)
+  (send *hironxjsk* :larm :inverse-kinematics (send target-coords :copy-worldcoords)
+        :revert-fail t
+        :rotation-axis t
+        :debug-view nil :thre 50
+        :move-target (send *hironxjsk* :get :lhand-tip-coords))
+  (ir2ri)
+  (send target-coords :rotate pi :z)
+  (send *hironxjsk* :larm-wrist-r :joint-angle 180 :relative t)
+  (ir2ri)
+  (send target-coords :translate #f(0 0 -60) :world)
+  (send *hironxjsk* :larm :inverse-kinematics (send target-coords :copy-worldcoords)
+        :revert-fail t
+        :rotation-axis t
+        :debug-view nil :thre 50
+        :move-target (send *hironxjsk* :get :lhand-tip-coords))
+
+  (setq repeat-time (floor (/ (* length-1 (sqrt 2)) 20)))
+  (dotimes (x repeat-time)
+    (lhand-twist)
+    (send *hironxjsk* :stop-grasp :larm)
+    (ir2ri-lhand)
+    (send target-coords :translate (float-vector (* -1 (* 10 (sqrt 2))) 0 (* -1 (* 10 (sqrt 2)))) :world)
+    (send *hironxjsk* :larm :inverse-kinematics (send target-coords :copy-worldcoords)
+          :revert-fail t
+          :rotation-axis t
+          :debug-view nil :thre 50
+          :move-target (send *hironxjsk* :get :lhand-tip-coords))
+    (ir2ri)
+    )
+
+  (setq right-target-coords (send (send box-center :copy-worldcoords) :translate
+                                  #f(0 -50 0) :world))
+  (send right-target-coords :rotate pi :y)
+  (send right-target-coords :rotate -pi/2 :z)
+  (send right-target-coords :translate #f(0 0 60) :world)
+  (send *hironxjsk* :rarm :inverse-kinematics (send right-target-coords :copy-worldcoords)
+        :revert-fail t
+        :rotation-axis :y
+        :debug-view nil :thre 50
+        :move-target (send *hironxjsk* :get :rhand-tip-coords))
+  (ir2ri)
+
+  (unix::sleep 10)
+  (setq left-target-coords (send (send box-edge-5 :copy-worldcoords) :translate
+                                 (float-vector (+ (* -1 length-1) 30) 0 -30) :world))
+  (send left-target-coords :rotate pi :y)
+  (send left-target-coords :rotate -pi/2 :z)
+  (send left-target-coords :rotate (deg2rad -45) :y)
+  (send *hironxjsk* :larm :inverse-kinematics (send left-target-coords :copy-worldcoords)
+        :revert-fail t
+        :rotation-axis t
+        :debug-view nil :thre 50
+        :move-target (send *hironxjsk* :get :lhand-tip-coords))
+  (ir2ri)
+  (lhand-grasp)
+  (setq avs (list))
+  (setq tms (list))
+  (dotimes (i 8)
+    (setq cds (send (send box-edge-5 :copy-worldcoords) :translate (float-vector (+ 30 (* -1 (* length-1 (cos (/ (* i pi) 20))))) (* -1 (* length-1 (sin (/ (* i pi) 20)))) -20) :world))
+    (send cds :rotate pi :y)
+    (send cds :rotate -pi/2 :z)
+    (send cds :rotate (deg2rad -45) :y)
+    (send *hironxjsk* :larm :inverse-kinematics (send cds :copy-worldcoords)
+          :revert-fail t
+          :rotation-axis t
+          :debug-view nil :thre 50
+          :move-target (send *hironxjsk* :get :lhand-tip-coords))
+    (send *viewer* :draw-objects)
+    (setq av (send *hironxjsk* :angle-vector))
+    (setq avs (append avs (list av)))
+    (if (= i 0)
+        (setq tms (append tms (list 3000)))
+      (setq tms (append tms (list 500)))))
+  (send *ri* :angle-vector-sequence avs tms)
+  (send *ri* :wait-interpolation)
+
+  (setq right-target-coords (send (send box-edge-5 :copy-worldcoords) :translate
+                                 (float-vector (+ (* -1 length-1) 30) 0 -20) :world))
+  (send right-target-coords :rotate pi :y)
+  (send right-target-coords :rotate (deg2rad 135) :z)
+  (send *hironxjsk* :rarm :inverse-kinematics (send right-target-coords :copy-worldcoords)
+        :revert-fail t
+        :rotation-axis t
+        :debug-view nil :thre 50
+        :move-target (send *hironxjsk* :get :rhand-tip-coords))
+  (ir2ri)
+  (rhand-grasp)
+  (setq avs (list))
+  (setq tms (list))
+  (dotimes (i 8)
+    (setq cds (send (send box-edge-5 :copy-worldcoords) :translate (float-vector (+ 30 (* -1 (* length-1 (cos (/ (* i pi) 20))))) (* -1 (* length-1 (sin (/ (* i pi) 20)))) -20) :world))
+    (send cds :rotate pi :y)
+    (send cds :rotate (deg2rad 45) :z)
+    (send *hironxjsk* :rarm :inverse-kinematics (send cds :copy-worldcoords)
+          :revert-fail t
+          :rotation-axis t
+          :debug-view nil :thre 50
+          :move-target (send *hironxjsk* :get :rhand-tip-coords))
+    (send *viewer* :draw-objects)
+    (setq av (send *hironxjsk* :angle-vector))
+    (setq avs (append avs (list av)))
+    (if (= i 0)
+        (setq tms (append tms (list 3000)))
+      (setq tms (append tms (list 500)))))
+  (send *ri* :angle-vector-sequence avs tms)
+  (send *ri* :wait-interpolation)
 
 
 
