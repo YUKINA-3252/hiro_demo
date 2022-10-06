@@ -1,0 +1,10 @@
+(defun get-zforce (topic-name &key (condition) (timeout 10))
+  (let* (msg)
+
+    (while (or (null msg) (= (length (send msg :wrench)) 0))
+      (setq msg (one-shot-subscribe topic-name
+                                    geometry_msgs::WrenchStamped
+                                    :timeout (* timeout 1000)
+                                    :condition condition))
+      )
+    msg))
