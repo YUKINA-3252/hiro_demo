@@ -38,7 +38,7 @@
   <param name="/use_sim_time" value="true" />
   <param name="robot_description"
          command="$(find xacro)/xacro --inorder $(find hironx_tutorial)/models/HIRONXJSK.gazebo.xacro
-                  gazebo:=false finger:=$(arg finger) finger_tip:=$(arg finger_tip)" />
+                  gazebo:=false" />
 
   <node pkg="rosbag" type="play" name="rosbag_play"
         args="$(arg rosbag) $(arg loop_flag) --clock" output="screen" />
