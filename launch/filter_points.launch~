@@ -1,0 +1,23 @@
+<launch>
+
+
+  <node name="attention_clipper_with_bbox_array"
+        pkg="nodelet" type="nodelet"
+        args="standalone jsk_pcl/AttentionClipper">
+    <remap from="~input" to="$(arg INPUT_CAMERA_INFO)" />
+    <remap from="~input/points" to="$(arg INPUT_CLOUD)" />
+    <remap from="~input/box_array" to="bounding_box_array_publisher/output" />
+    <rosparam>
+      approximate_sync: true
+      queue_size: 30
+      frame_id: right_hand_camera_rgb_optical_frame
+      use_multiple_attention: true
+    </rosparam>
+  </node>
+
+  <node name="extract_indices_with_bbox_array"
+        pkg="jsk_pcl_ros" type="extract_indices">
+    <remap from="~input" to="$(arg INPUT_CLOUD)" />
+    <remap from="~indices" to="attention_clipper_with_bbox_array/output/point_indices" />
+  </node>
+</launch>
