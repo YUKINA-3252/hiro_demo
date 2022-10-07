@@ -81,7 +81,6 @@
     (setq target-bounding-box (bbox->cube ros-bbox))
     target-bounding-box))
 
-
 (defun find-tape-bbox (topic-name &key (condition) (timeout 10))
   (let* (msg
          ros-bbox
