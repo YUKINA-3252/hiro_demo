@@ -27,6 +27,9 @@
 (send *irtviewer* :draw-objects)  ;; Only for display
 (send *ri* :angle-vector (send *hironxjsk* :angle-vector) 5000)
 (send *ri* :wait-interpolation)
+(setq left-initial-coords (send *hironxjsk* :larm :end-coords :copy-worldcoords))
+(setq right-initial-coords (send *hironxjsk* :rarm :end-coords :copy-worldcoords))
+(setq init-coords (send *hironxjsk* :angle-vector))
 
 (defun detect()
   (setq *box-topic-name* "/segmentation_decomposer/boxes")
@@ -99,8 +102,6 @@
   (send box-coords :assoc box-edge-7)
   (send box-coords :assoc box-edge-8)
   (send box-coords :assoc box-center)
-  (setq left-initial-coords (send *hironxjsk* :larm :end-coords :copy-worldcoords))
-  (setq right-initial-coords (send *hironxjsk* :rarm :end-coords :copy-worldcoords))
   )
 (defun ir2ri ()
   (send *ri* :angle-vector (send *hironxjsk* :angle-vector) 5000)
@@ -271,6 +272,7 @@
         :debug-view nil :thre 50
         :move-target (send *hironxjsk* :get :lhand-tip-coords))
   (ir2ri)
+  (print (send target-coords :copy-worldcoords))
   (defun fold-and-insert ()
     (let ((c (send target-coords :copy-worldcoords))
           (n (- (floor (/ (* length-1 (sqrt 2)) 20))))
@@ -278,9 +280,11 @@
       (labels ((get-ik-lst (n)
                  (let ((c (send c :copy-worldcoords))
                        (prev-angle-vector (send *hironxjsk* :angle-vector))
-                       acc)
+                       acc
+                       coords)
                    (dotimes (i n)
                      (send c :translate (float-vector (* -1 (* 10 (sqrt 2))) 0 (* -1 (* 10 (sqrt 2)))) :world)
+                     (print c)
                      (let ((ik
                             (send *hironxjsk* :larm :inverse-kinematics c
                                   :revert-fail t
@@ -288,22 +292,40 @@
                                   :debug-view nil :thre 50
                                   :move-target (send *hironxjsk* :get :lhand-tip-coords))))
                        (assert ik)
-                       (push ik acc)))
-                   (print acc)
+                       (push ik acc)
+                       (push c coords)))
                    (send *hironxjsk* :angle-vector prev-angle-vector)
+                   (setq coords (reverse coords))
                    (setq acc (reverse acc)))))
         (let ((ik-lst (get-ik-lst steps)))
           (handler-bind ((collision
                           #'(lambda (cc)
+                              (ri2ir)
                               (let* ((l (length ik-lst))
                                      ;; (x (* (- steps l) (* -1 (* 10 (sqrt 2)))))
-                                     (x (* (- steps l) (* -1 (* 10 (sqrt 2))))))
+                                     (x (* (- (- steps l) 2) (* 10 (sqrt 2))))
+                                     (current-angle-vector (send *hironxjsk* :angle-vector)))
                                 (send c :translate (float-vector (+ x 30) 0 x) :world)
-                                (setq ik-lst (get-ik-lst l))))))
+                                (print x)
+                                ;; (send c :translate (float-vector 50 0 50) :world)
+                                (setq ik-lst (get-ik-lst l))
+                                (setq d (send (send *hironxjsk* :larm :end-coords) :copy-worldcoords))
+                                (send d :translate #f(0 0 50) :world)
+                                (setq mv-ik (send *hironxjsk* :larm :inverse-kinematics d
+                                      :revert-fail t
+                                      :rotation-axis t
+                                      :debug-view nil :thre 50
+                                      :move-target (send *hironxjsk* :get :lhand-tip-coords)))
+                                (push mv-ik ik-lst)
+                                (send *hironxjsk* :angle-vector current-angle-vector)
+                                ))))
             (while ik-lst
               (send *ri* :angle-vector (pop ik-lst) 5000)
               (collision-detect)
               (send *ri* :wait-interpolation)
+              (lhand-twist)
+              (send *hironxjsk* :stop-grasp :larm)
+              (ir2ri-lhand)
               (print (length ik-lst))))))))
 
       (dotimes (x repeat-time)
