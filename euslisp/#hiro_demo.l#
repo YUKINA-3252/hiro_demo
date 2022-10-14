@@ -415,15 +415,18 @@
                        :move-target (send *hironxjsk* :get :lhand-tip-coords)))
                  (send *hironxjsk-col* :angle-vector (send *hironxjsk* :angle-vector))
                  (setq collision-check (send *hironxjsk-col* :self-collision-check))
-                 (if (or (equal (listp collision-check) t) (equal ik nil))
+                 (if (equal collision-check nil)
                      (progn
-                       (ros::advertise "/ik_collision" std_msgs::String 1)
-                       (setq msg (instance std_msgs::String :init))
-                       (send msg :data (format nil "ik-collision"))
-                       (ros::publish "/ik_collision" msg)
-                       (return-from solve-ik current-angle-vector))
-                     (progn
-                       (return-from solve-ik ik)))))
+                       (if (equal ik nil)
+                           (progn
+                             (ros::advertise "/ik_collision" std_msgs::String 1)
+                             (setq msg (instance std_msgs::String :init))
+                             (send msg :data (format nil "ik-collision"))
+                             (ros::publish "/ik_collision" msg)
+                             (return-from solve-ik current-angle-vector))
+                           (progn
+                             (return-from solve-ik ik))))
+                     (return-f
         (handler-bind ((ik-collision #'(lambda (cc)
                                          (print (format nil "##############################"))
                                          (print (length pop-lst))
@@ -431,7 +434,7 @@
                                              (push (pop tcl) pop-lst))
                                          (push (elt pop-lst 0) tcl)
                                          (dotimes (i (length tcl))
-                                           (nsubstitute (send (send (elt tcl i) :copy-worldcoords) :translate #f(0 30 0) :world) (elt tcl i) tcl))
+                                           (nsubstitute (send (send (elt tcl i) :copy-worldcoords) :translate #f(30 0 0) :world) (elt tcl i) tcl))
                                          (print (format nil "tcl: ~A" tcl)))))
           (while tcl
             (setq v (solve-ik (pop tcl)))
