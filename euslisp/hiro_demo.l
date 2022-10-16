@@ -19,7 +19,10 @@
 (roseus_resume:defintervention
     ik-collision "/ik_collision" std_msgs::String :groupname (*ri* . groupname))
 
-(setq fold-pose #f(15.3838 -17.9424 -132.249 30.6319 60.6267 11.4336 -2.36213 18.5294 -92.893 -20.6037 -59.4623 8.65206 0.0 0.0 43.3064))
+(setq fold-pose-angle-vector #f(15.3838 -17.9424 -132.249 30.6319 60.6267 11.4336 -2.36213 18.5294 -92.893 -20.6037 -59.4623 8.65206 0.0 0.0 43.3064))
+(setq fold-pose-coords (make-coords))
+(send fold-pose-coords :move-to (make-coords :pos #f(381 133.725 -6.086)
+                                    :rpy #f(0.096 -0.788 -0.013)) :world)
 
 ;;display aroow-coords of hand
 (setq *right-coords-arrow* (arrow))
@@ -209,7 +212,7 @@
         :debug-view nil :thre 50
         :move-target (send *hironxjsk* :get :lhand-tip-coords))
   (lhand-grasp)
-  (ir2ri)
+n  (ir2ri)
 
   (setq repeat-time (floor (/ (/ box-y 2) 20)))
   (setq length-1 90)
@@ -258,7 +261,7 @@
     (send *hironxjsk* :rarm :inverse-kinematics (send right-target-coords :copy-worldcoords)
           :revert-fail t
           :rotation-axis :z
-          :debug-view nil :thre 50p
+          :debug-view nil :thre 50
           :move-target (send *hironxjsk* :get :rhand-tip-coords))
     (ir2ri)
     (setq z-force-value (get-zforce *wrench-topic-name*))
@@ -285,76 +288,6 @@
         :debug-view nil :thre 50
         :move-target (send *hironxjsk* :get :lhand-tip-coords))
   (ir2ri)
-  ;; (defun fold-and-insert ()
-  ;;   (let ((c (send (send *hironxjsk* :get :lhand-tip-coords) :copy-worldcoords))
-  ;;         (n (- (floor (/ (* length-1 (sqrt 2)) 20)) 1))
-  ;;         pop-lst)
-  ;;     (labels ((get-ik-lst (n)
-  ;;                (let ((prev-angle-vector (send *hironxjsk* :angle-vector))
-  ;;                      (cr-c (send (send *hironxjsk* :get :lhand-tip-coords) :copy-worldcoords))
-  ;;                      acc)
-  ;;                  (dotimes (i n)
-  ;;                    (send c :translate (float-vector (* -1 (* 10 (sqrt 2))) 0 (* -1 (* 10 (sqrt 2)))) :world)
-  ;;                    (print c)
-  ;;                    (let ((ik
-  ;;                           (send *hironxjsk* :larm :inverse-kinematics (send c :copy-worldcoords)
-  ;;                                 :revert-fail t
-  ;;                                 :rotation-axis t
-  ;;                                 :debug-view nil :thre 50
-  ;;                                 :move-target (send *hironxjsk* :get :lhand-tip-coords))))
-  ;;                      (assert ik)
-  ;;                      (setq mlst (list ik c))
-  ;;                      (push mlst acc)))
-  ;;                  (send *hironxjsk* :angle-vector prev-angle-vector)
-  ;;                  (send c :move-to (send cr-c :copy-worldcoords))
-  ;;                  (setq acc (reverse acc))
-  ;;                  )))
-  ;;       (let ((ik-lst (get-ik-lst n)))
-  ;;         (handler-bind ((collision
-  ;;                         #'(lambda (cc)
-  ;;                             (let* ((l (length ik-lst))
-  ;;                                    ;; (x (* (- steps l) (* -1 (* 10 (sqrt 2)))))
-  ;;                                    (x (* l (* 10 (sqrt 2))))
-  ;;                                    (current-angle-vector (send *hironxjsk* :angle-vector)))
-  ;;                               ;; (send c :translate (float-vector (+ x 50) 0 x) :world)
-  ;;                               (send c :translate (float-vector 50 0 0) :world)
-  ;;                               (setq ik-lst (get-ik-lst l))
-  ;;                               (setq d (send (send *hironxjsk* :larm :end-coords) :copy-worldcoords))
-  ;;                               ;; (send d :translate #f(0 0 50) :world)
-  ;;                               ;; (setq mv-ik (send *hironxjsk* :larm :inverse-kinematics d
-  ;;                               ;;       :revert-fail t
-  ;;                               ;;       :rotation-axis t
-  ;;                               ;;       :debug-view nil :thre 50
-  ;;                               ;;       :move-target (send *hironxjsk* :get :lhand-tip-coords)))
-  ;;                               ;; (push mv-ik ik-lst)
-
-  ;;                               (send *ri* :angle-vector initial-coords)
-  ;;                               (send *ri* :wait-interpolation)
-  ;;                               (ri2ir)
-  ;;                               (send (elt (elt pop-lst 0) 1) :translate #f(50 0 0) :world)
-  ;;                               (setq ad (list
-  ;;                                      (send *hironxjsk* :larm :inverse-kinematics (elt (elt pop-lst 0) 1)
-  ;;                                            :revert-fail t
-  ;;                                            :rotation-axis t
-  ;;                                            :debug-view nil :thre 50
-  ;;                                            :move-target (send *hironxjsk* :get :lhand-tip-coords))
-  ;;                                      (elt (elt pop-lst 0) 1)))
-  ;;                               (push ad ik-lst)
-  ;;                               (send *hironxjsk* :angle-vector current-angle-vector)
-  ;;                               ))))
-  ;;           (while ik-lst
-  ;;             (print ik-lst)
-  ;;             (push (pop ik-lst) pop-lst)
-  ;;             (print (elt pop-lst 0))
-  ;;             (collision-detect)
-  ;;             (send *ri* :angle-vector (elt (elt pop-lst 0) 0) 5000)
-  ;;             (send *ri* :wait-interpolation)
-  ;;             (ri2ir)
-  ;;             (lhand-twist)
-  ;;             (send *hironxjsk* :stop-grasp :larm)
-  ;;             (ir2ri-lhand)
-  ;;             (print (length ik-lst))
-  ;;             ))))))
 
   (defun make-target-coords-list ()
     (let ((steps (- (floor (/ (* length-1 (sqrt 2)) 20)) 1))
@@ -370,52 +303,82 @@
         (print mtarget-coords-list)
         (push mtarget-coords-list target-coords-list))
       target-coords-list))
+
+  ;; (defun fold-and-insert ()
+  ;;   (let ((tcl (make-target-coords-list))
+  ;;         pop-lst)
+  ;;     (labels ((solve-ik (coords)
+  ;;                (push coords pop-lst)
+  ;;                (setq current-angle-vector (send *ri* :state :potentio-vector))
+  ;;                (setq ik (send *hironxjsk* :larm :inverse-kinematics (send coords :copy-worldcoords)
+  ;;                      :revert-fail t
+  ;;                      :rotation-axis t
+  ;;                      :debug-view nil :thre 50
+  ;;                      :move-target (send *hironxjsk* :get :lhand-tip-coords)))
+  ;;                (send *hironxjsk-col* :angle-vector (send *hironxjsk* :angle-vector))
+  ;;                (setq collision-check (send *hironxjsk-col* :self-collision-check))
+  ;;                (print collision-check)
+  ;;                (if (equal collision-check nil)
+  ;;                    (progn
+  ;;                      (if (equal ik nil)
+  ;;                          (progn
+  ;;                            (ros::advertise "/ik_collision" std_msgs::String 1)
+  ;;                            (setq msg (instance std_msgs::String :init))
+  ;;                            (send msg :data (format nil "ik-collision"))
+  ;;                            (ros::publish "/ik_collision" msg)
+  ;;                            (return-from solve-ik current-angle-vector))
+  ;;                          (progn
+  ;;                            (return-from solve-ik ik))))
+  ;;                    (progn
+  ;;                      (ros::advertise "/ik_collision" std_msgs::String 1)
+  ;;                      (setq msg (instance std_msgs::String :init))
+  ;;                      (send msg :data (format nil "ik-collision"))
+  ;;                      (ros::publish "/ik_collision" msg)
+  ;;                      (return-from solve-ik current-angle-vector)))))
+  ;;       (handler-bind ((ik-collision #'(lambda (cc)
+  ;;                                        (print (format nil "##############################"))
+  ;;                                        (if (= (length pop-lst) 0)
+  ;;                                            (push (pop tcl) pop-lst))
+  ;;                                        (push (elt pop-lst 0) tcl)
+  ;;                                        (dotimes (i (length tcl))
+  ;;                                          (nsubstitute (send (send (elt tcl i) :copy-worldcoords) :translate #f(50 0 0) :world) (elt tcl i) tcl))
+  ;;                                        (left-reset-pose))))
+  ;;         (while tcl
+  ;;           (print tcl)
+  ;;           (setq v (solve-ik (pop tcl)))
+  ;;           (print v)
+  ;;           (print "here")
+  ;;           (send *ri* :angle-vector v 5000)
+  ;;           (send *ri* :wait-interpolation)
+  ;;           )))))
+
   (defun fold-and-insert ()
     (let ((tcl (make-target-coords-list))
-          pop-lst)
-      (labels ((solve-ik (c)
-                 (setq ik (send *hironxjsk* :larm :inverse-kinematics (send c :copy-worldcoords)
+          (pre-endcoords (make-coords))
+          (cre-endcoords (make-coords))
+          (lpos-diff-test nil)
+          pre-endpos
+          cre-endpos
+          pop-lst
+          ;;lpos-lst
+          lpos-diff)
+      (labels ((solve-ik (coords)
+                 (push coords pop-lst)
+                 (setq current-angle-vector (send *ri* :state :potentio-vector))
+                 ;; (if (> (length lpos-lst) 1)
+                 ;;     (setq lpos-diff (norm (v- (elt lpos-lst 0) (elt lpos-lst 1))))
+                 ;;     (setq lpos-diff 50))
+                 (if (not (or (equal pre-endpos nil) (equal cre-endpos nil)))
+                     (setq lpos-diff (norm (v- pre-endpos cre-endpos)))
+                     (setq lpos-diff 50))
+                 (print lpos-diff)
+                 (setq ik (send *hironxjsk* :larm :inverse-kinematics (send coords :copy-worldcoords)
                        :revert-fail t
                        :rotation-axis t
                        :debug-view nil :thre 50
                        :move-target (send *hironxjsk* :get :lhand-tip-coords)
                        :check-collision t))
-                 (if (equal ik nil)
-                     (progn
-                       (ros::advertise "/ik_collision" std_msgs::String 1)
-                       (setq msg (instance std_msgs::String :init))
-                       (send msg :data (format nil "ik-collision"))
-                       (ros::publish "/ik_collision" msg)))
-                 ik))
-        (handler-bind ((ik-collision #'(lambda (cc)
-                                         (print (format nil "##############################"))
-                                         (push (elt pop-lst 1) tcl)
-                                         (dotimes (i (length tcl))
-                                           (nsubstitute (send (send (elt tcl i) :copy-worldcoords) :translate #f(30 0 0) :world) (elt tcl i) tcl))
-                                         (print (format nil "tcl: ~A" tcl)))))
-          (while tcl
-            (setq next-coords (pop tcl))
-            (push next-coords pop-lst)
-            (setq tcoords (solve-ik next-coords))
-            (print "here")
-            (send *ri* :angle-vector tcoords 5000)
-            (send *ri* :wait-interpolation)
-            )))))
-
-  (defun fold-and-insert ()
-    (let ((tcl (make-target-coords-list))
-          pop-lst)
-      (labels ((solve-ik (coords)
-                 (push coords pop-lst)
-                 (setq current-angle-vector (send *ri* :state :potentio-vector))
-                 (setq ik (send *hironxjsk* :larm :inverse-kinematics (send coords :copy-worldcoords)
-                       :revert-fail t
-                       :rotation-axis t
-                       :debug-view nil :thre 50
-                       :move-target (send *hironxjsk* :get :lhand-tip-coords)))
-                 (send *hironxjsk-col* :angle-vector (send *hironxjsk* :angle-vector))
-                 (setq collision-check (send *hironxjsk-col* :self-collision-check))
-                 (if (or (equal (listp collision-check) t) (equal ik nil))
+                 (if (or (equal ik nil) (and (equal lpos-diff-test nil) (< lpos-diff 15)))
                      (progn
                        (ros::advertise "/ik_collision" std_msgs::String 1)
                        (setq msg (instance std_msgs::String :init))
@@ -425,21 +388,38 @@
                      (progn
                        (return-from solve-ik ik)))))
         (handler-bind ((ik-collision #'(lambda (cc)
-                                         (print (format nil "##############################"))
-                                         (print (length pop-lst))
+                                         (setq lpos-diff-test t)
                                          (if (= (length pop-lst) 0)
                                              (push (pop tcl) pop-lst))
                                          (push (elt pop-lst 0) tcl)
                                          (dotimes (i (length tcl))
-                                           (nsubstitute (send (send (elt tcl i) :copy-worldcoords) :translate #f(0 30 0) :world) (elt tcl i) tcl))
-                                         (print (format nil "tcl: ~A" tcl)))))
+                                           (nsubstitute (send (send (elt tcl i) :copy-worldcoords) :translate #f(100 0 0) :world) (elt tcl i) tcl))
+                                         ;; (setq right-target-coords (send (send box-down-edge :copy-worldcoords) :rotate pi :x))
+                                         ;; (send right-target-coords :rotate pi/2 :z)
+                                         ;; (setq ik (send *hironxjsk* :rarm :inverse-kinematics (send right-target-coords :copy-worldcoords)
+                                         ;;                :revert-fail t
+                                         ;;                :rotation-axis t
+                                         ;;                :debug-view nil :thre 50
+                                         ;;                :move-target (send *hironxjsk* :get :rhand-tip-coords)))
+                                         ;; (send box-coords :translate #f(100 100 0) :world)
+                                         )))
           (while tcl
             (setq v (solve-ik (pop tcl)))
-            (print v)
+            (setq lpos-diff-test nil)
             (print "here")
             (send *ri* :angle-vector v 5000)
             (send *ri* :wait-interpolation)
-            )))))))
+            ;; (lhand-twist)
+            ;; (send *hironxjsk* :stop-grasp :larm)
+            ;; (ir2ri-lhand)
+            (ri2ir)
+            (setq pre-endcoords cre-endcoords)
+            (setq cre-endcoords (send (send *hironxjsk* :larm :end-coords) :copy-worldcoords))
+            (setq pre-endpos (send pre-endcoords :worldpos))
+            (setq cre-endpos (send cre-endcoords :worldpos))
+            (print pre-endpos)
+            (print cre-endpos)
+            )))))
 
   (dotimes (x repeat-time)
     (lhand-twist)
