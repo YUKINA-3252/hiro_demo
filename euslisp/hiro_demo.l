@@ -17,7 +17,7 @@
 (roseus_resume:install-interruption-handler *ri*)
 (roseus_resume:defintervention
     ik-collision "/ik_collision" std_msgs::String :groupname (*ri* . groupname))
-(ros::advertise "/ik_collision" std_msgs::String 1)
+(ros::advertise "/ik_collision" std_msgs::String 10)
 
 (setq fold-pose-angle-vector #f(15.3838 -17.9424 -132.249 30.6319 60.6267 11.4336 -2.36213 18.5294 -92.893 -20.6037 -59.4623 8.65206 0.0 0.0 43.3064))
 (setq fold-pose-coords (make-coords))
@@ -73,6 +73,7 @@
 
   (setq box-coords (instance cascaded-coords :init))
   (send box-coords :move-to (send target-box :copy-worldcoords) :world)
+  (send box-coords :assoc *target-box*)
   (setq box-x (y-of-cube target-box))
   (setq box-y (x-of-cube target-box))
   (setq box-z (z-of-cube target-box))
@@ -132,7 +133,7 @@
 (defun ri2ir-lhand ()
   (send *hironxjsk* :hand-angle-vector :lhand (send *ri* :hand-angle-vector :lhand)))
 (defun ir2ri-hand ()
-  (send *ri* :hand-angle-vector :arm (send *hironxjsk* :hand-angle-vector :arm))
+  (send *ri* :hand-angle-vector :arm (sennnd *hironxjsk* :hand-angle-vector :arm))
   (send *ri* :wait-interpolation))
 (defun ir2ri-rhand ()
   (send *ri* :hand-angle-vector :rhand (send *hironxjsk* :hand-angle-vector :rhand))
@@ -183,6 +184,17 @@
         :debug-view nil :thre 50)
   (send *ri* :angle-vector (send *hironxjsk* :angle-vector) 5000)
   (send *ri* :wait-interpolation))
+
+(defun reset-pose-ir ()
+  (send *hironxjsk* :stop-grasp)
+  (send *hironxjsk* :rarm :inverse-kinematics (send right-initial-coords :copy-worldcoords)
+        :revert-if-fail t
+        :rotation-axis t
+        :debug-view nil :thre 50)
+  (send *hironxjsk* :larm :inverse-kinematics (send left-initial-coords :copy-worldcoords)
+        :revert-if-fail t
+        :rotation-axis t
+        :debug-view nil :thre 50))
 (defun lhand-twist ()
   (send *hironxjsk* :start-grasp :larm)
   (ir2ri-lhand)
@@ -212,7 +224,7 @@
         :debug-view nil :thre 50
         :move-target (send *hironxjsk* :get :lhand-tip-coords))
   (lhand-grasp)
-n  (ir2ri)
+  (ir2ri)
 
   (setq repeat-time (floor (/ (/ box-y 2) 20)))
   (setq length-1 90)
@@ -268,6 +280,27 @@ n  (ir2ri)
     (print z-force-value)
     (if (> z-force-value 0)
         (return)))
+
+  (defun do-paper-sim ()
+    (unix::sleep 10)
+    (setq *paper* (paper))
+    (send box-coords :assoc *paper*)
+    ;; (send box-coords :assoc *paper*)
+    (setq ob-list (list *hironxjsk* *target-box* *paper*))
+    (objects ob-list)
+    (unix::sleep 1)
+    (reset-pose-ir)
+    (unix::sleep 1)
+    (wrapping-side)
+    (unix::sleep 1)
+    (wrapping-up)
+    (unix::sleep 1)
+    (reach-boxedge)
+    (unix::sleep 1)
+    (display-listcoords (make-target-coords-list))
+    (unix::sleep 1)
+    (fold-sim))
+
 
   ;;fold and insert
   (setq target-coords (send box-edge-1 :copy-worldcoords))
@@ -463,17 +496,17 @@ n  (ir2ri)
   (send *ri* :angle-vector-sequence avs tms)
   (send *ri* :wait-interpolation)
 
-  (setq right-target-coords (send (send box-edge-5 :copy-worldcoords) :translate
-                                 (float-vector (+ (* -1 length-1) 30) 0 -20) :world))
-  (send right-target-coords :rotate pi :y)
-  (send right-target-coords :rotate (deg2rad 135) :z)
-  (send *hironxjsk* :rarm :inverse-kinematics (send right-target-coords :copy-worldcoords)
-        :revert-if-fail t
-        :rotation-axis t
-        :debug-view nil :thre 50
-        :move-target (send *hironxjsk* :get :rhand-tip-coords))
-  (ir2ri)
-  (rhand-grasp)
+  ;; (setq right-target-coords (send (send box-edge-5 :copy-worldcoords) :translate
+  ;;                                (float-vector (+ (* -1 length-1) 30) 0 -20) :world))
+  ;; (send right-target-coords :rotate pi :y)
+  ;; (send right-target-coords :rotate (deg2rad 135) :z)
+  ;; (send *hironxjsk* :rarm :inverse-kinematics (send right-target-coords :copy-worldcoords)
+  ;;       :revert-if-fail t
+  ;;       :rotation-axis t
+  ;;       :debug-view nil :thre 50
+  ;;       :move-target (send *hironxjsk* :get :rhand-tip-coords))
+  ;; (ir2ri)
+  ;; (rhand-grasp)
   (setq avs (list))
   (setq tms (list))
   (dotimes (i 8)
