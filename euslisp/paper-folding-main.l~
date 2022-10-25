@@ -1,0 +1,4 @@
+(load "package://hrpsys_ros_bridge_tutorials/euslisp/hironxjsk-interface.l")
+(hironxjsk-init)
+(setq objects-lst (list *hironxjsk*))
+(send *irtviewer* :draw-objects)

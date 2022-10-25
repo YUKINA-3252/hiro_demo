@@ -13,7 +13,7 @@
      (let* (p1 p2 p3 p4 p5 p6 p7 p8 p9 p10-1 p10-2 p11 p12 p13 p14 p15)
        (send-super :init)
 
-       (setq paper-x 250)
+       (setq paper-x 330)
        (setq paper-y 700)
        (setq paper-z 5)
        (setq paper-x-end (/ (- paper-x box-x) 2))

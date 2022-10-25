@@ -1,0 +1,7 @@
+(defun box (coords)
+  (let ((box-x 111.353)
+        (box-y 221.284)
+        (box-z 11.3468))
+    (setq *box* (make-cube box-x box-y box-z))
+    (send *box* :move-to (send coords :copy-worldcoords) :world)
+    (send *irtviewer* :draw-objects)))

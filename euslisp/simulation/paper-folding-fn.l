@@ -1,3 +1,18 @@
+(defun make-target-coords-list ()
+  (let ((steps (- (floor (/ (* (*paper* . paper-x-end) (sqrt 2)) 20)) 1))
+        (start-coords (send (send *hironxjsk* :get :lhand-tip-coords) :copy-worldcoords))
+        (num-lst (list))
+        (diff (* -1 (* 10 (sqrt 2))))
+        target-coords-list)
+    (dotimes (i steps)
+      (push i num-lst))
+    (dolist (x num-lst)
+      (setq mtarget-coords-list (send (send start-coords :copy-worldcoords) :translate
+                                      (float-vector (* x diff) 0 (* x diff)) :world))
+      (print mtarget-coords-list)
+      (push mtarget-coords-list target-coords-list))
+    target-coords-list))
+
 (defun wrapping-side ()
   (setq p5-assoc (list 1 2 3 4 6))
   (dolist (x p5-assoc)
@@ -157,7 +172,6 @@
                                        (unix::sleep 1)
                                        )))
         (while tcl
-          (print "here")
           (setq v (solve-ik (pop tcl)))
           ;; (print "read-line")
           ;; (read-line)
